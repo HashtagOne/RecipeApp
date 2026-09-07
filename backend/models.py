@@ -18,13 +18,13 @@ class Recipe(db.Model):
     user_id= db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
 
     title = db.Column(db.String(80), nullable=False)
-    description = db.Column(db.String(200), nullable=False)
-    image_url = db.Column(db.String(300), nullable=False)
+    description = db.Column(db.String(200), nullable=True)
+    image_url = db.Column(db.String(300), nullable=True)
     prep_time = db.Column(db.Integer, nullable=False)
     cook_time = db.Column(db.Integer, nullable=False)
     servings = db.Column(db.Integer, nullable=False)
     difficulty = db.Column(db.String(30), nullable=False)
-    is_public = db.Column(db.Boolean, default=False, nullable=False)
+    is_public = db.Column(db.Boolean, default=False, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.now)
 
     recipe_ingredients = db.relationship("RecipeIngredient", backref="recipe", cascade="all, delete-orphan")
