@@ -143,17 +143,6 @@ def update_recipe(id):
     db.session.commit()
     return jsonify(recipe.to_dict()), 200
 
-
-    
-
-
-
-
-
-
-
-
-
 @routes_blueprint.route("/recipes/<int:id>", methods=["DELETE"])
 @login_required
 def delete_recipe(id):
@@ -166,4 +155,21 @@ def delete_recipe(id):
     db.session.commit()
     return jsonify({"message": "Recipe deleted."}), 200
 
- 
+@routes_blueprint.route("/recipes/<int:id>/visibility", methods=["PATCH"])
+@login_required
+def update_visibility(id):
+    recipe = db.session.get(Recipe, id)
+
+    if not recipe or recipe.user_id != current_user.id:
+        return jsonify({"error": "Recipe not found."}), 404
+
+    recipe.is_public = not recipe.is_public
+    db.session.commit()
+    return jsonify(recipe.to_dict()), 200
+
+@routes_blueprint.route("/tags", methods=["GET"])
+def autocomplete_tag():
+    query = request.args.get("q", "")
+    tags = Tag.query.filter(Tag.name.ilike(f"%{query}%")).all()
+    return jsonify([tag.name for tag in tags]), 200
+    
