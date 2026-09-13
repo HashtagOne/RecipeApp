@@ -2,6 +2,8 @@ from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from models import db, Recipe, Ingredient, RecipeTag, Step, RecipeIngredient, Tag
 from datetime import date
+import cloudinary.uploader
+import json
 
 routes_blueprint = Blueprint("routes", __name__)
 
@@ -21,28 +23,45 @@ def get_publicrecipes():
 @routes_blueprint.route("/recipes", methods=["POST"])
 @login_required
 def create_recipe():
-    data = request.get_json()
 
-    required_fields = ["title", "prep_time", "cook_time", "servings", "difficulty"]
+    title = request.form.get("title")
+    prep_time = request.form.get("prep_time")
+    cook_time = request.form.get("cook_time")
+    servings = request.form.get("servings")
+    difficulty = request.form.get("difficulty")
+    description = request.form.get("description", "")
+    is_public = request.form.get("is_public", "false").lower() == "true"
+    ingredients = json.loads(request.form.get("ingredients", "[]"))
+    steps = json.loads(request.form.get("steps", "[]"))
+    tags = json.loads(request.form.get("tags", "[]"))
 
-    if not data or any(not data.get(field) for field in required_fields):
+    required_fields = {"title": title, "prep_time": prep_time, "cook_time": cook_time, "servings": servings, "difficulty": difficulty}
+
+    if any(not v for v in required_fields.values()):
         return jsonify({"error": "Missing required fields."}), 400
 
+    image_url = None
+    if "image" in request.files:
+        file = request.files["image"]
+        upload_result = cloudinary.uploader.upload(file)
+        image_url = upload_result["secure_url"]
+
     recipe = Recipe(
-        title = data["title"],
-        prep_time = data["prep_time"],
-        cook_time = data["cook_time"],
-        servings = data["servings"],
-        difficulty = data["difficulty"],
-        description = data.get("description", ""),
-        image_url = data.get("image_url"),
-        is_public = data.get("is_public", False),
-        user_id = current_user.id
+        title= title,
+        prep_time = int(prep_time),
+        cook_time = int(cook_time),
+        servings = int(servings),
+        difficulty = difficulty,
+        image_url = image_url,
+        description = description,
+        is_public = is_public,
+        user_id = current_user.id,
     )
+    
     db.session.add(recipe)
     db.session.flush()
 
-    for index, step_data in enumerate(data.get("steps", [])):
+    for index, step_data in enumerate(steps):
         step = Step(
             recipe_id = recipe.id,
             order_index = index,
@@ -50,7 +69,7 @@ def create_recipe():
         )
         db.session.add(step)
 
-    for tag_name in data.get("tags", []):
+    for tag_name in tags:
         tag = Tag.query.filter_by(name=tag_name.lower()).first()
         if not tag:
             tag = Tag(name=tag_name.lower())
@@ -59,7 +78,7 @@ def create_recipe():
         recipe_tag = RecipeTag(recipe_id=recipe.id, tag_id=tag.id)
         db.session.add(recipe_tag)
 
-    for index, ing_data in enumerate(data.get("ingredients", [])):
+    for index, ing_data in enumerate(ingredients):
         ingredient = Ingredient.query.filter_by(name=ing_data["name"].lower()).first()
         if not ingredient:
             ingredient = Ingredient(name=ing_data["name"].lower())
