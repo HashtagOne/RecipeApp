@@ -31,9 +31,13 @@ def create_recipe():
     difficulty = request.form.get("difficulty")
     description = request.form.get("description", "")
     is_public = request.form.get("is_public", "false").lower() == "true"
-    ingredients = json.loads(request.form.get("ingredients", "[]"))
-    steps = json.loads(request.form.get("steps", "[]"))
-    tags = json.loads(request.form.get("tags", "[]"))
+
+    try:
+        ingredients = json.loads(request.form.get("ingredients", "[]"))
+        steps = json.loads(request.form.get("steps", "[]"))
+        tags = json.loads(request.form.get("tags", "[]"))
+    except json.JSONDecodeError:
+        return jsonify({"error": "Invalid JSON in ingredients, steps, or tags."}), 400
 
     required_fields = {"title": title, "prep_time": prep_time, "cook_time": cook_time, "servings": servings, "difficulty": difficulty}
 
@@ -113,9 +117,13 @@ def update_recipe(id):
     difficulty = request.form.get("difficulty")
     description = request.form.get("description", "")
     is_public = request.form.get("is_public", "false").lower() == "true"
-    ingredients = json.loads(request.form.get("ingredients", "[]"))
-    steps = json.loads(request.form.get("steps", "[]"))
-    tags = json.loads(request.form.get("tags", "[]"))
+
+    try:
+        ingredients = json.loads(request.form.get("ingredients", "[]"))
+        steps = json.loads(request.form.get("steps", "[]"))
+        tags = json.loads(request.form.get("tags", "[]"))
+    except json.JSONDecodeError:
+        return jsonify({"error": "Invalid JSON in ingredients, steps, or tags."}), 400
 
     required_fields = {"title": title, "prep_time": prep_time, "cook_time": cook_time, "servings": servings, "difficulty": difficulty}
 
@@ -126,9 +134,6 @@ def update_recipe(id):
         file = request.files["image"]
         upload_result = cloudinary.uploader.upload(file)
         recipe.image_url = upload_result["secure_url"]
-
-    
-    
 
     recipe.title = title
     recipe.prep_time = int(prep_time)
